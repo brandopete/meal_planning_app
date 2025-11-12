@@ -1,11 +1,23 @@
 'use client';
 
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ChefHat, LayoutGrid, UtensilsCrossed, ShoppingBasket } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const navigation = [
+  { name: 'Dashboard', href: '/', icon: LayoutGrid },
+  { name: 'Meal Plans', href: '/meal-plans', icon: UtensilsCrossed },
+  { name: 'Recipes', href: '/recipes', icon: ChefHat },
+  { name: 'Pantry', href: '/pantry', icon: ShoppingBasket },
+];
 
 export function Header() {
   const { user, logOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     try {
@@ -21,20 +33,47 @@ export function Header() {
   }
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Meal Planning App</h1>
+    <header className="border-b bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2">
+              <ChefHat className="h-6 w-6" />
+              <span className="text-xl font-semibold">Meal Planner</span>
+            </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      isActive
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground hidden sm:inline">
               {user.displayName || user.email}
             </span>
-            <button
+            <Button
               onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              variant="outline"
+              size="sm"
             >
               Sign out
-            </button>
+            </Button>
           </div>
         </div>
       </div>
