@@ -15,6 +15,17 @@ CREATE TABLE IF NOT EXISTS meal_plans (
   CHECK (end_date >= start_date)
 );
 
+-- Recipes Table (moved before meals to satisfy foreign key dependency)
+CREATE TABLE IF NOT EXISTS recipes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  ingredients JSONB NOT NULL DEFAULT '[]'::jsonb,
+  instructions TEXT,
+  url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Meals Table
 CREATE TABLE IF NOT EXISTS meals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -26,17 +37,6 @@ CREATE TABLE IF NOT EXISTS meals (
   description TEXT,
   servings INTEGER NOT NULL DEFAULT 1 CHECK (servings > 0),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Recipes Table
-CREATE TABLE IF NOT EXISTS recipes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title TEXT NOT NULL,
-  ingredients JSONB NOT NULL DEFAULT '[]'::jsonb,
-  instructions TEXT,
-  url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Pantry Items Table
