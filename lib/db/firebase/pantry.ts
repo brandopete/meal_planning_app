@@ -19,7 +19,7 @@ export async function getAllPantryItems(userId: string) {
     const pantryRef = collection(db, 'pantryItems');
     const q = query(
       pantryRef,
-      where('userId', '==', userId),
+      where('user_id', '==', userId),
       orderBy('item')
     );
     const pantrySnap = await getDocs(q);
@@ -28,12 +28,12 @@ export async function getAllPantryItems(userId: string) {
       const data = doc.data();
       return {
         id: doc.id,
-        userId: data.userId,
+        user_id: data.user_id,
         item: data.item,
         quantity: data.quantity,
         unit: data.unit,
-        createdAt: data.createdAt?.toDate().toISOString(),
-        updatedAt: data.updatedAt?.toDate().toISOString(),
+        created_at: data.created_at?.toDate().toISOString(),
+        updated_at: data.updated_at?.toDate().toISOString(),
       };
     });
 
@@ -55,18 +55,18 @@ export async function getPantryItem(itemId: string, userId: string) {
     const data = itemSnap.data();
 
     // Verify ownership
-    if (data.userId !== userId) {
+    if (data.user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const item: PantryItem = {
       id: itemSnap.id,
-      userId: data.userId,
+      user_id: data.user_id,
       item: data.item,
       quantity: data.quantity,
       unit: data.unit,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
+      updated_at: data.updated_at?.toDate().toISOString(),
     };
 
     return { data: item, error: null };
@@ -86,12 +86,12 @@ export async function createPantryItem(
   try {
     const pantryRef = collection(db, 'pantryItems');
     const docRef = await addDoc(pantryRef, {
-      userId,
+      user_id: userId,
       item: itemData.item,
       quantity: itemData.quantity,
       unit: itemData.unit,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
     });
 
     const newItem = await getDoc(docRef);
@@ -99,12 +99,12 @@ export async function createPantryItem(
 
     const pantryItem: PantryItem = {
       id: docRef.id,
-      userId: data.userId,
+      user_id: data.user_id,
       item: data.item,
       quantity: data.quantity,
       unit: data.unit,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
+      updated_at: data.updated_at?.toDate().toISOString(),
     };
 
     return { data: pantryItem, error: null };
@@ -130,12 +130,12 @@ export async function updatePantryItem(
       return { data: null, error: new Error('Pantry item not found') };
     }
 
-    if (itemSnap.data().userId !== userId) {
+    if (itemSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const updateData: any = {
-      updatedAt: serverTimestamp(),
+      updated_at: serverTimestamp(),
     };
 
     if (updates.item) updateData.item = updates.item;
@@ -149,12 +149,12 @@ export async function updatePantryItem(
 
     const pantryItem: PantryItem = {
       id: updatedItem.id,
-      userId: data.userId,
+      user_id: data.user_id,
       item: data.item,
       quantity: data.quantity,
       unit: data.unit,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
+      updated_at: data.updated_at?.toDate().toISOString(),
     };
 
     return { data: pantryItem, error: null };
@@ -172,7 +172,7 @@ export async function deletePantryItem(itemId: string, userId: string) {
       return { data: null, error: new Error('Pantry item not found') };
     }
 
-    if (itemSnap.data().userId !== userId) {
+    if (itemSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 

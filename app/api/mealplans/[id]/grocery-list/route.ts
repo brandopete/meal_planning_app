@@ -67,7 +67,7 @@ export async function POST(
 
     // 3. Fetch all recipes referenced by the meals
     const recipeIds = meals
-      .map((meal) => meal.recipeId)
+      .map((meal) => meal.recipe_id)
       .filter((id): id is string => id !== null && id !== undefined);
 
     const recipesMap: Record<string, Recipe> = {};
@@ -83,8 +83,8 @@ export async function POST(
     try {
       const groceryList = await generateGroceryList({
         mealPlanId,
-        startDate: mealPlan.startDate,
-        endDate: mealPlan.endDate,
+        startDate: mealPlan.start_date,
+        endDate: mealPlan.end_date,
         meals,
         recipes: recipesMap,
         pantryItems: pantry_items as PantryItem[],

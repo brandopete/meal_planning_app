@@ -47,9 +47,9 @@ export async function generateGroceryList(
     end: endDate,
     meals: meals.map((meal) => ({
       date: meal.date,
-      meal_time: meal.mealTime,
+      meal_time: meal.meal_time,
       title: meal.title,
-      recipe: meal.recipeId && recipes[meal.recipeId] ? recipes[meal.recipeId] : null,
+      recipe: meal.recipe_id && recipes[meal.recipe_id] ? recipes[meal.recipe_id] : null,
       description: meal.description,
       servings: meal.servings,
     })),
@@ -137,47 +137,47 @@ Return only the JSON object.`;
       throw new Error('Invalid response format from OpenAI');
     }
 
-    // Add IDs to items and transform snake_case to camelCase
+    // Add IDs to items and keep snake_case
     const items = validationResult.data.items.map((item) => ({
       id: uuidv4(),
       name: item.name,
-      displayName: item.display_name,
+      display_name: item.display_name,
       quantity: item.quantity,
       unit: item.unit,
-      quantityInGrams: item.quantity_in_grams,
+      quantity_in_grams: item.quantity_in_grams,
       category: item.category,
       notes: item.notes,
-      fromRecipes: item.from_recipes.map(source => ({
-        recipeId: source.recipe_id,
-        mealDate: source.meal_date,
+      from_recipes: item.from_recipes.map(source => ({
+        recipe_id: source.recipe_id,
+        meal_date: source.meal_date,
         servings: source.servings,
       })),
-      estimatedPrice: item.estimated_price,
-      storeSuggestions: item.store_suggestions,
+      estimated_price: item.estimated_price,
+      store_suggestions: item.store_suggestions,
       optional: item.optional,
     }));
 
     const totalEstimatedCost = items.reduce(
-      (sum, item) => sum + (item.estimatedPrice || 0),
+      (sum, item) => sum + (item.estimated_price || 0),
       0
     );
 
     const groceryList: GroceryList = {
       id: uuidv4(),
-      mealPlanId: mealPlanId,
+      meal_plan_id: mealPlanId,
       meta: {
-        generatedAt: new Date().toISOString(),
-        dateRange: {
+        generated_at: new Date().toISOString(),
+        date_range: {
           start: startDate,
           end: endDate,
         },
-        servingsScale: 1.0,
-        unitSystem: unitSystem,
+        servings_scale: 1.0,
+        unit_system: unitSystem,
       },
       items,
       summary: {
-        totalItems: items.length,
-        estimatedTotal: totalEstimatedCost > 0 ? totalEstimatedCost : undefined,
+        total_items: items.length,
+        estimated_total: totalEstimatedCost > 0 ? totalEstimatedCost : undefined,
       },
     };
 

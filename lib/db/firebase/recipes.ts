@@ -27,9 +27,9 @@ export async function getAllRecipes() {
         ingredients: data.ingredients as RecipeIngredient[],
         instructions: data.instructions,
         url: data.url || null,
-        imageUrl: data.imageUrl || null,
-        createdAt: data.createdAt?.toDate().toISOString(),
-        updatedAt: data.updatedAt?.toDate().toISOString(),
+        image_url: data.image_url || null,
+        created_at: data.created_at?.toDate().toISOString(),
+        updated_at: data.updated_at?.toDate().toISOString(),
       };
     });
 
@@ -55,9 +55,9 @@ export async function getRecipe(recipeId: string) {
       ingredients: data.ingredients as RecipeIngredient[],
       instructions: data.instructions,
       url: data.url || null,
-      imageUrl: data.imageUrl || null,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
+      image_url: data.image_url || null,
+      created_at: data.created_at?.toDate().toISOString(),
+      updated_at: data.updated_at?.toDate().toISOString(),
     };
 
     return { data: recipe, error: null };
@@ -80,9 +80,9 @@ export async function createRecipe(recipeData: {
       ingredients: recipeData.ingredients,
       instructions: recipeData.instructions,
       url: recipeData.url || null,
-      imageUrl: recipeData.imageUrl || null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      image_url: recipeData.imageUrl || null,
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
     });
 
     const newRecipe = await getDoc(docRef);
@@ -94,9 +94,9 @@ export async function createRecipe(recipeData: {
       ingredients: data.ingredients as RecipeIngredient[],
       instructions: data.instructions,
       url: data.url || null,
-      imageUrl: data.imageUrl || null,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
+      image_url: data.image_url || null,
+      created_at: data.created_at?.toDate().toISOString(),
+      updated_at: data.updated_at?.toDate().toISOString(),
     };
 
     return { data: recipe, error: null };
@@ -124,14 +124,14 @@ export async function updateRecipe(
     }
 
     const updateData: any = {
-      updatedAt: serverTimestamp(),
+      updated_at: serverTimestamp(),
     };
 
     if (updates.title) updateData.title = updates.title;
     if (updates.ingredients) updateData.ingredients = updates.ingredients;
     if (updates.instructions) updateData.instructions = updates.instructions;
     if (updates.url !== undefined) updateData.url = updates.url;
-    if (updates.imageUrl !== undefined) updateData.imageUrl = updates.imageUrl;
+    if (updates.imageUrl !== undefined) updateData.image_url = updates.imageUrl;
 
     await updateDoc(recipeRef, updateData);
 
@@ -144,9 +144,9 @@ export async function updateRecipe(
       ingredients: data.ingredients as RecipeIngredient[],
       instructions: data.instructions,
       url: data.url || null,
-      imageUrl: data.imageUrl || null,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
+      image_url: data.image_url || null,
+      created_at: data.created_at?.toDate().toISOString(),
+      updated_at: data.updated_at?.toDate().toISOString(),
     };
 
     return { data: recipe, error: null };

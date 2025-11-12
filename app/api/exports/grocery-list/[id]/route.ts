@@ -28,11 +28,11 @@ export async function GET(
     if (format === 'csv') {
       // Convert to CSV format
       const csvData = groceryList.items.map((item) => ({
-        'Item Name': item.displayName || item.name,
+        'Item Name': item.display_name || item.name,
         'Quantity': item.quantity,
         'Unit': item.unit,
         'Category': item.category,
-        'Estimated Price': item.estimatedPrice || '',
+        'Estimated Price': item.estimated_price || '',
         'Notes': item.notes || '',
         'Optional': item.optional ? 'Yes' : 'No',
       }));

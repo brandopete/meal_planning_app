@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
     // Build the budget estimate
     const items = groceryList.items.map((item) => {
       // Use manual override if provided, otherwise use estimated price, otherwise 0
-      const price = manual_overrides?.[item.id] ?? item.estimatedPrice ?? 0;
+      const price = manual_overrides?.[item.id] ?? item.estimated_price ?? 0;
 
       return {
         item_id: item.id,
-        name: item.displayName || item.name,
+        name: item.display_name || item.name,
         quantity: item.quantity,
         unit: item.unit,
         estimated_price: price,
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     for (const groceryItem of groceryList.items) {
       const category = groceryItem.category;
-      const price = manual_overrides?.[groceryItem.id] ?? groceryItem.estimatedPrice ?? 0;
+      const price = manual_overrides?.[groceryItem.id] ?? groceryItem.estimated_price ?? 0;
 
       if (!categorySubtotals[category]) {
         categorySubtotals[category] = 0;

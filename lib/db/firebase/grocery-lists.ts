@@ -27,20 +27,20 @@ export async function getGroceryList(listId: string, userId: string) {
     const data = listSnap.data();
 
     // Verify ownership through meal plan
-    const planRef = doc(db, 'mealPlans', data.mealPlanId);
+    const planRef = doc(db, 'mealPlans', data.meal_plan_id);
     const planSnap = await getDoc(planRef);
 
-    if (!planSnap.exists() || planSnap.data().userId !== userId) {
+    if (!planSnap.exists() || planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const groceryList: GroceryList = {
       id: listSnap.id,
-      mealPlanId: data.mealPlanId,
+      meal_plan_id: data.meal_plan_id,
       meta: data.meta,
       items: data.items as GroceryItem[],
       summary: data.summary,
-      createdAt: data.createdAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
     };
 
     return { data: groceryList, error: null };
@@ -50,15 +50,15 @@ export async function getGroceryList(listId: string, userId: string) {
 }
 
 export async function getGroceryListByMealPlan(
-  mealPlanId: string,
+  meal_plan_id: string,
   userId: string
 ) {
   try {
     // Verify ownership of meal plan
-    const planRef = doc(db, 'mealPlans', mealPlanId);
+    const planRef = doc(db, 'mealPlans', meal_plan_id);
     const planSnap = await getDoc(planRef);
 
-    if (!planSnap.exists() || planSnap.data().userId !== userId) {
+    if (!planSnap.exists() || planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
@@ -66,8 +66,8 @@ export async function getGroceryListByMealPlan(
     const listsRef = collection(db, 'groceryLists');
     const q = query(
       listsRef,
-      where('mealPlanId', '==', mealPlanId),
-      orderBy('createdAt', 'desc'),
+      where('meal_plan_id', '==', meal_plan_id),
+      orderBy('created_at', 'desc'),
       limit(1)
     );
     const listsSnap = await getDocs(q);
@@ -81,11 +81,11 @@ export async function getGroceryListByMealPlan(
 
     const groceryList: GroceryList = {
       id: listDoc.id,
-      mealPlanId: data.mealPlanId,
+      meal_plan_id: data.meal_plan_id,
       meta: data.meta,
       items: data.items as GroceryItem[],
       summary: data.summary,
-      createdAt: data.createdAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
     };
 
     return { data: groceryList, error: null };
@@ -95,7 +95,7 @@ export async function getGroceryListByMealPlan(
 }
 
 export async function createGroceryList(
-  mealPlanId: string,
+  meal_plan_id: string,
   userId: string,
   listData: {
     meta: any;
@@ -105,21 +105,21 @@ export async function createGroceryList(
 ) {
   try {
     // Verify ownership of meal plan
-    const planRef = doc(db, 'mealPlans', mealPlanId);
+    const planRef = doc(db, 'mealPlans', meal_plan_id);
     const planSnap = await getDoc(planRef);
 
-    if (!planSnap.exists() || planSnap.data().userId !== userId) {
+    if (!planSnap.exists() || planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const listsRef = collection(db, 'groceryLists');
     const docRef = await addDoc(listsRef, {
-      mealPlanId,
-      userId, // Denormalize for easier querying
+      meal_plan_id,
+      user_id: userId, // Denormalize for easier querying
       meta: listData.meta,
       items: listData.items,
       summary: listData.summary,
-      createdAt: serverTimestamp(),
+      created_at: serverTimestamp(),
     });
 
     const newList = await getDoc(docRef);
@@ -127,11 +127,11 @@ export async function createGroceryList(
 
     const groceryList: GroceryList = {
       id: docRef.id,
-      mealPlanId: data.mealPlanId,
+      meal_plan_id: data.meal_plan_id,
       meta: data.meta,
       items: data.items as GroceryItem[],
       summary: data.summary,
-      createdAt: data.createdAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
     };
 
     return { data: groceryList, error: null };
@@ -159,10 +159,10 @@ export async function updateGroceryList(
     const data = listSnap.data();
 
     // Verify ownership through meal plan
-    const planRef = doc(db, 'mealPlans', data.mealPlanId);
+    const planRef = doc(db, 'mealPlans', data.meal_plan_id);
     const planSnap = await getDoc(planRef);
 
-    if (!planSnap.exists() || planSnap.data().userId !== userId) {
+    if (!planSnap.exists() || planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
@@ -178,11 +178,11 @@ export async function updateGroceryList(
 
     const groceryList: GroceryList = {
       id: updatedList.id,
-      mealPlanId: updatedData.mealPlanId,
+      meal_plan_id: updatedData.meal_plan_id,
       meta: updatedData.meta,
       items: updatedData.items as GroceryItem[],
       summary: updatedData.summary,
-      createdAt: updatedData.createdAt?.toDate().toISOString(),
+      created_at: updatedData.created_at?.toDate().toISOString(),
     };
 
     return { data: groceryList, error: null };
@@ -203,10 +203,10 @@ export async function deleteGroceryList(listId: string, userId: string) {
     const data = listSnap.data();
 
     // Verify ownership through meal plan
-    const planRef = doc(db, 'mealPlans', data.mealPlanId);
+    const planRef = doc(db, 'mealPlans', data.meal_plan_id);
     const planSnap = await getDoc(planRef);
 
-    if (!planSnap.exists() || planSnap.data().userId !== userId) {
+    if (!planSnap.exists() || planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 

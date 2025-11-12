@@ -29,17 +29,17 @@ export async function getMealPlan(planId: string, userId: string) {
     const planData = planSnap.data();
 
     // Verify ownership
-    if (planData.userId !== userId) {
+    if (planData.user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const mealPlan: MealPlan = {
       id: planSnap.id,
-      userId: planData.userId,
-      startDate: planData.startDate.toDate().toISOString().split('T')[0],
-      endDate: planData.endDate.toDate().toISOString().split('T')[0],
-      createdAt: planData.createdAt?.toDate().toISOString(),
-      updatedAt: planData.updatedAt?.toDate().toISOString(),
+      user_id: planData.user_id,
+      start_date: planData.start_date.toDate().toISOString().split('T')[0],
+      end_date: planData.end_date.toDate().toISOString().split('T')[0],
+      created_at: planData.created_at?.toDate().toISOString(),
+      updated_at: planData.updated_at?.toDate().toISOString(),
     };
 
     return { data: mealPlan, error: null };
@@ -56,11 +56,11 @@ export async function createMealPlan(
   try {
     const mealPlansRef = collection(db, 'mealPlans');
     const docRef = await addDoc(mealPlansRef, {
-      userId,
-      startDate: Timestamp.fromDate(new Date(startDate)),
-      endDate: Timestamp.fromDate(new Date(endDate)),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      user_id: userId,
+      start_date: Timestamp.fromDate(new Date(startDate)),
+      end_date: Timestamp.fromDate(new Date(endDate)),
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
     });
 
     const newPlan = await getDoc(docRef);
@@ -68,11 +68,11 @@ export async function createMealPlan(
 
     const mealPlan: MealPlan = {
       id: docRef.id,
-      userId: planData.userId,
-      startDate: planData.startDate.toDate().toISOString().split('T')[0],
-      endDate: planData.endDate.toDate().toISOString().split('T')[0],
-      createdAt: planData.createdAt?.toDate().toISOString(),
-      updatedAt: planData.updatedAt?.toDate().toISOString(),
+      user_id: planData.user_id,
+      start_date: planData.start_date.toDate().toISOString().split('T')[0],
+      end_date: planData.end_date.toDate().toISOString().split('T')[0],
+      created_at: planData.created_at?.toDate().toISOString(),
+      updated_at: planData.updated_at?.toDate().toISOString(),
     };
 
     return { data: mealPlan, error: null };
@@ -94,19 +94,19 @@ export async function updateMealPlan(
       return { data: null, error: new Error('Meal plan not found') };
     }
 
-    if (planSnap.data().userId !== userId) {
+    if (planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const updateData: any = {
-      updatedAt: serverTimestamp(),
+      updated_at: serverTimestamp(),
     };
 
     if (updates.startDate) {
-      updateData.startDate = Timestamp.fromDate(new Date(updates.startDate));
+      updateData.start_date = Timestamp.fromDate(new Date(updates.startDate));
     }
     if (updates.endDate) {
-      updateData.endDate = Timestamp.fromDate(new Date(updates.endDate));
+      updateData.end_date = Timestamp.fromDate(new Date(updates.endDate));
     }
 
     await updateDoc(planRef, updateData);
@@ -116,11 +116,11 @@ export async function updateMealPlan(
 
     const mealPlan: MealPlan = {
       id: updatedPlan.id,
-      userId: planData.userId,
-      startDate: planData.startDate.toDate().toISOString().split('T')[0],
-      endDate: planData.endDate.toDate().toISOString().split('T')[0],
-      createdAt: planData.createdAt?.toDate().toISOString(),
-      updatedAt: planData.updatedAt?.toDate().toISOString(),
+      user_id: planData.user_id,
+      start_date: planData.start_date.toDate().toISOString().split('T')[0],
+      end_date: planData.end_date.toDate().toISOString().split('T')[0],
+      created_at: planData.created_at?.toDate().toISOString(),
+      updated_at: planData.updated_at?.toDate().toISOString(),
     };
 
     return { data: mealPlan, error: null };
@@ -138,7 +138,7 @@ export async function deleteMealPlan(planId: string, userId: string) {
       return { data: null, error: new Error('Meal plan not found') };
     }
 
-    if (planSnap.data().userId !== userId) {
+    if (planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
@@ -169,27 +169,27 @@ export async function getMealsForPlan(planId: string, userId: string) {
       return { data: null, error: new Error('Meal plan not found') };
     }
 
-    if (planSnap.data().userId !== userId) {
+    if (planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     // Get all meals for this plan
     const mealsRef = collection(db, 'mealPlans', planId, 'meals');
-    const q = query(mealsRef, orderBy('date'), orderBy('mealTime'));
+    const q = query(mealsRef, orderBy('date'), orderBy('meal_time'));
     const mealsSnap = await getDocs(q);
 
     const meals: Meal[] = mealsSnap.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
-        mealPlanId: planId,
+        meal_plan_id: planId,
         date: data.date.toDate().toISOString().split('T')[0],
-        mealTime: data.mealTime,
+        meal_time: data.meal_time,
         title: data.title,
-        recipeId: data.recipeId || null,
+        recipe_id: data.recipe_id || null,
         description: data.description || null,
         servings: data.servings,
-        createdAt: data.createdAt?.toDate().toISOString(),
+        created_at: data.created_at?.toDate().toISOString(),
       };
     });
 
@@ -220,19 +220,19 @@ export async function createMeal(
       return { data: null, error: new Error('Meal plan not found') };
     }
 
-    if (planSnap.data().userId !== userId) {
+    if (planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
     const mealsRef = collection(db, 'mealPlans', planId, 'meals');
     const docRef = await addDoc(mealsRef, {
       date: Timestamp.fromDate(new Date(mealData.date)),
-      mealTime: mealData.mealTime,
+      meal_time: mealData.mealTime,
       title: mealData.title,
-      recipeId: mealData.recipeId || null,
+      recipe_id: mealData.recipeId || null,
       description: mealData.description || null,
       servings: mealData.servings,
-      createdAt: serverTimestamp(),
+      created_at: serverTimestamp(),
     });
 
     const newMeal = await getDoc(docRef);
@@ -240,14 +240,14 @@ export async function createMeal(
 
     const meal: Meal = {
       id: docRef.id,
-      mealPlanId: planId,
+      meal_plan_id: planId,
       date: data.date.toDate().toISOString().split('T')[0],
-      mealTime: data.mealTime,
+      meal_time: data.meal_time,
       title: data.title,
-      recipeId: data.recipeId || null,
+      recipe_id: data.recipe_id || null,
       description: data.description || null,
       servings: data.servings,
-      createdAt: data.createdAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
     };
 
     return { data: meal, error: null };
@@ -278,7 +278,7 @@ export async function updateMeal(
       return { data: null, error: new Error('Meal plan not found') };
     }
 
-    if (planSnap.data().userId !== userId) {
+    if (planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
@@ -288,9 +288,9 @@ export async function updateMeal(
     if (updates.date) {
       updateData.date = Timestamp.fromDate(new Date(updates.date));
     }
-    if (updates.mealTime) updateData.mealTime = updates.mealTime;
+    if (updates.mealTime) updateData.meal_time = updates.mealTime;
     if (updates.title) updateData.title = updates.title;
-    if (updates.recipeId !== undefined) updateData.recipeId = updates.recipeId;
+    if (updates.recipeId !== undefined) updateData.recipe_id = updates.recipeId;
     if (updates.description !== undefined) updateData.description = updates.description;
     if (updates.servings) updateData.servings = updates.servings;
 
@@ -301,14 +301,14 @@ export async function updateMeal(
 
     const meal: Meal = {
       id: updatedMeal.id,
-      mealPlanId: planId,
+      meal_plan_id: planId,
       date: data.date.toDate().toISOString().split('T')[0],
-      mealTime: data.mealTime,
+      meal_time: data.meal_time,
       title: data.title,
-      recipeId: data.recipeId || null,
+      recipe_id: data.recipe_id || null,
       description: data.description || null,
       servings: data.servings,
-      createdAt: data.createdAt?.toDate().toISOString(),
+      created_at: data.created_at?.toDate().toISOString(),
     };
 
     return { data: meal, error: null };
@@ -331,7 +331,7 @@ export async function deleteMeal(
       return { data: null, error: new Error('Meal plan not found') };
     }
 
-    if (planSnap.data().userId !== userId) {
+    if (planSnap.data().user_id !== userId) {
       return { data: null, error: new Error('Unauthorized') };
     }
 
