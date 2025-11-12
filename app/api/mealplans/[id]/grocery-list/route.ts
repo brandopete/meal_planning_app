@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMealPlan, getMealsForPlan } from '@/lib/db/meal-plans';
-import { getRecipe } from '@/lib/db/recipes';
-import { createGroceryList } from '@/lib/db/grocery-lists';
+import { getMealPlan, getMealsForPlan } from '@/lib/db/firebase/meal-plans';
+import { getRecipe } from '@/lib/db/firebase/recipes';
+import { createGroceryList } from '@/lib/db/firebase/grocery-lists';
+import { requireAuth } from '@/lib/auth/server';
 import { generateGroceryList } from '@/lib/ai/generate-grocery-list';
 import { z } from 'zod';
 import type { Recipe, PantryItem } from '@/types';
@@ -22,6 +23,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
+
     const { id: mealPlanId } = await params;
     const body = await request.json();
 
@@ -37,16 +41,16 @@ export async function POST(
     const { unit_system, pantry_items } = validationResult.data;
 
     // 1. Fetch the meal plan
-    const { data: mealPlan, error: mealPlanError } = await getMealPlan(mealPlanId);
+    const { data: mealPlan, error: mealPlanError } = await getMealPlan(mealPlanId, user.uid);
     if (mealPlanError || !mealPlan) {
       return NextResponse.json(
-        { error: 'Meal plan not found' },
-        { status: 404 }
+        { error: mealPlanError?.message || 'Meal plan not found' },
+        { status: mealPlanError?.message === 'Unauthorized' ? 403 : 404 }
       );
     }
 
     // 2. Fetch all meals for this meal plan
-    const { data: meals, error: mealsError } = await getMealsForPlan(mealPlanId);
+    const { data: meals, error: mealsError } = await getMealsForPlan(mealPlanId, user.uid);
     if (mealsError) {
       return NextResponse.json(
         { error: 'Failed to fetch meals' },
@@ -63,7 +67,7 @@ export async function POST(
 
     // 3. Fetch all recipes referenced by the meals
     const recipeIds = meals
-      .map((meal) => meal.recipe_id)
+      .map((meal) => meal.recipeId)
       .filter((id): id is string => id !== null && id !== undefined);
 
     const recipesMap: Record<string, Recipe> = {};
@@ -79,8 +83,8 @@ export async function POST(
     try {
       const groceryList = await generateGroceryList({
         mealPlanId,
-        startDate: mealPlan.start_date,
-        endDate: mealPlan.end_date,
+        startDate: mealPlan.startDate,
+        endDate: mealPlan.endDate,
         meals,
         recipes: recipesMap,
         pantryItems: pantry_items as PantryItem[],
@@ -88,7 +92,11 @@ export async function POST(
       });
 
       // 5. Save the grocery list to the database
-      const { data: savedList, error: saveError } = await createGroceryList(groceryList);
+      const { data: savedList, error: saveError } = await createGroceryList(
+        mealPlanId,
+        user.uid,
+        groceryList
+      );
 
       if (saveError) {
         console.error('Error saving grocery list:', saveError);
@@ -115,7 +123,10 @@ export async function POST(
         { status: 500 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error in grocery list generation endpoint:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

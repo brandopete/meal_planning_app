@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecipe, updateRecipe, deleteRecipe } from '@/lib/db/recipes';
+import { getRecipe, updateRecipe, deleteRecipe } from '@/lib/db/firebase/recipes';
+import { requireAuth } from '@/lib/auth/server';
 import { z } from 'zod';
 
 // Validation schema for recipe ingredients
@@ -54,6 +55,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    await requireAuth();
+
     const { id } = await params;
     const body = await request.json();
 
@@ -72,7 +76,7 @@ export async function PUT(
     const { data, error } = await updateRecipe(id, updates);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data) {
@@ -83,7 +87,10 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error updating recipe:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -97,15 +104,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    await requireAuth();
+
     const { id } = await params;
 
-    const { success, error } = await deleteRecipe(id);
+    const { data, error } = await deleteRecipe(id);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!success) {
+    if (!data) {
       return NextResponse.json(
         { error: 'Recipe not found' },
         { status: 404 }
@@ -113,7 +123,10 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error deleting recipe:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

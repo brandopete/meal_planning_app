@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPantryItem, updatePantryItem, deletePantryItem } from '@/lib/db/pantry';
+import { getPantryItem, updatePantryItem, deletePantryItem } from '@/lib/db/firebase/pantry';
+import { requireAuth } from '@/lib/auth/server';
 import { z } from 'zod';
 
 // Validation schema for updating pantry items
@@ -14,12 +15,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
     const { id } = await params;
 
-    const { data, error } = await getPantryItem(id);
+    const { data, error } = await getPantryItem(id, user.uid);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data) {
@@ -30,7 +36,10 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error fetching pantry item:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -44,6 +53,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
     const { id } = await params;
     const body = await request.json();
 
@@ -59,10 +70,13 @@ export async function PUT(
     const updates = validationResult.data;
 
     // Update pantry item
-    const { data, error } = await updatePantryItem(id, updates);
+    const { data, error } = await updatePantryItem(id, user.uid, updates);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data) {
@@ -73,7 +87,10 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error updating pantry item:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -87,15 +104,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
     const { id } = await params;
 
-    const { success, error } = await deletePantryItem(id);
+    const { data, error } = await deletePantryItem(id, user.uid);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!success) {
+    if (!data) {
       return NextResponse.json(
         { error: 'Pantry item not found' },
         { status: 404 }
@@ -103,7 +125,10 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error deleting pantry item:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

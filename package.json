@@ -4,9 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && next export",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "firebase:deploy": "npm run build && firebase deploy",
+    "firebase:deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "firebase:deploy:firestore": "firebase deploy --only firestore",
+    "firebase:deploy:storage": "firebase deploy --only storage",
+    "firebase:emulators": "firebase emulators:start"
   },
   "repository": {
     "type": "git",
@@ -21,8 +26,9 @@
   "homepage": "https://github.com/brandopete/meal_planning_app#readme",
   "description": "",
   "dependencies": {
-    "@supabase/supabase-js": "^2.81.1",
     "date-fns": "^4.1.0",
+    "firebase": "^12.5.0",
+    "firebase-admin": "^13.6.0",
     "next": "^16.0.1",
     "openai": "^6.8.1",
     "papaparse": "^5.5.3",

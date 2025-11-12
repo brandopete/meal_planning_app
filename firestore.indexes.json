@@ -1,0 +1,36 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "pantryItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "item", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "mealPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "meals",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "mealTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "recipes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "title", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

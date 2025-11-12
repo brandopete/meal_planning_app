@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGroceryList } from '@/lib/db/grocery-lists';
+import { getGroceryList } from '@/lib/db/firebase/grocery-lists';
+import { requireAuth } from '@/lib/auth/server';
 import Papa from 'papaparse';
 
 export async function GET(
@@ -7,28 +8,31 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
+
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'json';
 
     // Fetch the grocery list
-    const { data: groceryList, error: groceryListError } = await getGroceryList(id);
+    const { data: groceryList, error: groceryListError } = await getGroceryList(id, user.uid);
 
     if (groceryListError || !groceryList) {
       return NextResponse.json(
-        { error: 'Grocery list not found' },
-        { status: 404 }
+        { error: groceryListError?.message || 'Grocery list not found' },
+        { status: groceryListError?.message === 'Unauthorized' ? 403 : 404 }
       );
     }
 
     if (format === 'csv') {
       // Convert to CSV format
       const csvData = groceryList.items.map((item) => ({
-        'Item Name': item.display_name || item.name,
+        'Item Name': item.displayName || item.name,
         'Quantity': item.quantity,
         'Unit': item.unit,
         'Category': item.category,
-        'Estimated Price': item.estimated_price || '',
+        'Estimated Price': item.estimatedPrice || '',
         'Notes': item.notes || '',
         'Optional': item.optional ? 'Yes' : 'No',
       }));
@@ -57,7 +61,10 @@ export async function GET(
         { status: 400 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error exporting grocery list:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

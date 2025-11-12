@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createMealPlan } from '@/lib/db/meal-plans';
+import { createMealPlan } from '@/lib/db/firebase/meal-plans';
+import { requireAuth } from '@/lib/auth/server';
 import { z } from 'zod';
 
 // Validation schema
 const createMealPlanSchema = z.object({
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  user_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const user = await requireAuth();
+
     const body = await request.json();
 
     // Validate request body
@@ -22,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { start_date, end_date, user_id } = validationResult.data;
+    const { start_date, end_date } = validationResult.data;
 
     // Validate date range
     if (new Date(end_date) < new Date(start_date)) {
@@ -32,19 +35,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create meal plan
-    const { data, error } = await createMealPlan({
+    // Create meal plan with authenticated user's ID
+    const { data, error } = await createMealPlan(
+      user.uid,
       start_date,
-      end_date,
-      user_id,
-    });
+      end_date
+    );
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error creating meal plan:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGroceryList } from '@/lib/db/grocery-lists';
+import { getGroceryList } from '@/lib/db/firebase/grocery-lists';
+import { requireAuth } from '@/lib/auth/server';
 import { z } from 'zod';
 import type { BudgetEstimate } from '@/types';
 
 // Validation schema
 const priceEstimateSchema = z.object({
-  grocery_list_id: z.string().uuid(),
+  grocery_list_id: z.string(),
   store: z.string().optional(),
   manual_overrides: z.record(z.string(), z.number()).optional(), // item_id -> price
 });
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const user = await requireAuth();
+
     const body = await request.json();
 
     // Validate request body
@@ -26,23 +30,23 @@ export async function POST(request: NextRequest) {
     const { grocery_list_id, store, manual_overrides } = validationResult.data;
 
     // Fetch the grocery list
-    const { data: groceryList, error: groceryListError } = await getGroceryList(grocery_list_id);
+    const { data: groceryList, error: groceryListError } = await getGroceryList(grocery_list_id, user.uid);
 
     if (groceryListError || !groceryList) {
       return NextResponse.json(
-        { error: 'Grocery list not found' },
-        { status: 404 }
+        { error: groceryListError?.message || 'Grocery list not found' },
+        { status: groceryListError?.message === 'Unauthorized' ? 403 : 404 }
       );
     }
 
     // Build the budget estimate
     const items = groceryList.items.map((item) => {
       // Use manual override if provided, otherwise use estimated price, otherwise 0
-      const price = manual_overrides?.[item.id] ?? item.estimated_price ?? 0;
+      const price = manual_overrides?.[item.id] ?? item.estimatedPrice ?? 0;
 
       return {
         item_id: item.id,
-        name: item.display_name || item.name,
+        name: item.displayName || item.name,
         quantity: item.quantity,
         unit: item.unit,
         estimated_price: price,
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     for (const groceryItem of groceryList.items) {
       const category = groceryItem.category;
-      const price = manual_overrides?.[groceryItem.id] ?? groceryItem.estimated_price ?? 0;
+      const price = manual_overrides?.[groceryItem.id] ?? groceryItem.estimatedPrice ?? 0;
 
       if (!categorySubtotals[category]) {
         categorySubtotals[category] = 0;
@@ -86,7 +90,10 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error calculating price estimate:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -5,22 +5,23 @@ export type UnitSystem = "imperial" | "metric";
 
 export interface MealPlan {
   id: string;
-  user_id?: string;
-  start_date: string; // ISO date string
-  end_date: string; // ISO date string
-  created_at?: string;
-  updated_at?: string;
+  userId?: string;
+  startDate: string; // ISO date string
+  endDate: string; // ISO date string
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Meal {
   id: string;
-  meal_plan_id: string;
+  mealPlanId: string;
   date: string; // ISO date string
-  meal_time: MealTime;
+  mealTime: MealTime;
   title: string;
-  recipe_id?: string;
-  description?: string;
+  recipeId?: string | null;
+  description?: string | null;
   servings: number;
+  createdAt?: string;
 }
 
 // Recipe Types
@@ -37,66 +38,67 @@ export interface Recipe {
   title: string;
   ingredients: RecipeIngredient[];
   instructions?: string;
-  url?: string;
-  created_at?: string;
-  updated_at?: string;
+  url?: string | null;
+  imageUrl?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Pantry Types
 export interface PantryItem {
   id: string;
-  user_id?: string;
+  userId?: string;
   item: string;
   quantity: number;
   unit: string;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Grocery List Types
 export interface GroceryListMeta {
-  generated_at: string;
-  date_range: {
+  generatedAt: string;
+  dateRange: {
     start: string;
     end: string;
   };
-  servings_scale: number;
-  unit_system: UnitSystem;
+  servingsScale: number;
+  unitSystem: UnitSystem;
 }
 
 export interface GroceryItemSource {
-  recipe_id: string;
-  meal_date: string;
+  recipeId: string;
+  mealDate: string;
   servings: number;
 }
 
 export interface GroceryItem {
   id: string;
   name: string;
-  display_name: string;
+  displayName: string;
   quantity: number;
   unit: string;
-  quantity_in_grams?: number;
+  quantityInGrams?: number;
   category: string;
   notes?: string;
-  from_recipes: GroceryItemSource[];
-  estimated_price?: number;
-  store_suggestions?: string[];
+  fromRecipes: GroceryItemSource[];
+  estimatedPrice?: number;
+  storeSuggestions?: string[];
   optional: boolean;
 }
 
 export interface GroceryListSummary {
-  total_items: number;
-  estimated_total?: number;
+  totalItems: number;
+  estimatedTotal?: number;
 }
 
 export interface GroceryList {
   id: string;
-  meal_plan_id: string;
+  mealPlanId: string;
   meta: GroceryListMeta;
   items: GroceryItem[];
   summary: GroceryListSummary;
-  created_at?: string;
+  createdAt?: string;
 }
 
 // Budget Types
@@ -118,21 +120,21 @@ export interface BudgetEstimate {
 
 // API Request/Response Types
 export interface GenerateGroceryListRequest {
-  meal_plan_id: string;
-  unit_system: UnitSystem;
-  pantry_items?: PantryItem[];
+  mealPlanId: string;
+  unitSystem: UnitSystem;
+  pantryItems?: PantryItem[];
 }
 
 export interface GenerateGroceryListResponse {
   success: boolean;
-  grocery_list?: GroceryList;
+  groceryList?: GroceryList;
   error?: string;
 }
 
 export interface PriceEstimateRequest {
-  grocery_list_id: string;
+  groceryListId: string;
   store?: string;
-  manual_overrides?: Record<string, number>; // item_id -> price
+  manualOverrides?: Record<string, number>; // item_id -> price
 }
 
 export interface PriceEstimateResponse {

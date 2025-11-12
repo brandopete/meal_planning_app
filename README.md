@@ -1,11 +1,13 @@
 # Meal Planning App
 
-A full-stack meal planning application built with Next.js, Supabase, and OpenAI. Plan your meals, generate AI-powered grocery lists, and manage your budget.
+A full-stack meal planning application built with Next.js, Firebase, and OpenAI. Plan your meals, generate AI-powered grocery lists, and manage your budget.
 
 ## Features
 
+- User authentication with Firebase Auth
 - Create and manage weekly meal plans
 - Recipe management with ingredients and instructions
+- Recipe image uploads with Firebase Storage
 - Pantry tracking to avoid duplicate purchases
 - **AI-Powered Grocery List Generation** using OpenAI GPT-4
 - Budget estimation with category breakdowns
@@ -14,9 +16,12 @@ A full-stack meal planning application built with Next.js, Supabase, and OpenAI.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14+ (React), TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16+ (React), TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL)
+- **Database**: Firebase Firestore (NoSQL)
+- **Authentication**: Firebase Authentication
+- **Storage**: Firebase Storage
+- **Hosting**: Firebase Hosting
 - **AI**: OpenAI GPT-4
 - **Validation**: Zod
 - **Utilities**: date-fns, papaparse, uuid
@@ -26,7 +31,7 @@ A full-stack meal planning application built with Next.js, Supabase, and OpenAI.
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Supabase account
+- Firebase account (free tier available)
 - OpenAI API key
 
 ### 1. Clone and Install
@@ -37,20 +42,42 @@ cd meal_planning_app
 npm install
 ```
 
-### 2. Set Up Supabase
+### 2. Set Up Firebase
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to SQL Editor and run the schema from `supabase-schema.sql`
-3. Get your project URL and anon key from Settings > API
+1. Create a new project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable the following services:
+   - **Authentication**: Enable Email/Password sign-in method
+   - **Firestore Database**: Create a database in production mode
+   - **Storage**: Create a default storage bucket
+3. Get your Firebase configuration:
+   - Go to Project Settings > General
+   - Under "Your apps", add a web app
+   - Copy the firebaseConfig values
+4. Generate a service account key:
+   - Go to Project Settings > Service Accounts
+   - Click "Generate new private key"
+   - Save the JSON file securely (needed for server-side operations)
+5. Deploy Firestore rules and indexes:
+   ```bash
+   firebase deploy --only firestore
+   firebase deploy --only storage
+   ```
 
 ### 3. Set Up Environment Variables
 
 Create a `.env.local` file in the root directory:
 
 ```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+# Firebase Configuration (Client-side)
+NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+
+# Firebase Admin SDK (Server-side)
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
 
 # OpenAI Configuration
 OPENAI_API_KEY=your-openai-api-key
@@ -59,13 +86,17 @@ OPENAI_API_KEY=your-openai-api-key
 OPENAI_MODEL=gpt-4-turbo-preview
 ```
 
-### 4. Run the Development Server
+### 4. Update Firebase Project ID
+
+Edit `.firebaserc` and replace `your-firebase-project-id` with your actual project ID.
+
+### 5. Run the Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app.
+Open [http://localhost:3000](http://localhost:3000) to see the app. You'll be redirected to the login page.
 
 ## Project Structure
 
@@ -78,17 +109,30 @@ meal_planning_app/
 │   │   ├── pantry/           # Pantry endpoints
 │   │   ├── price-estimates/  # Budget calculation
 │   │   └── exports/          # Export endpoints
-│   ├── layout.tsx            # Root layout
-│   ├── page.tsx              # Home page
+│   ├── login/                # Login page
+│   ├── signup/               # Signup page
+│   ├── layout.tsx            # Root layout with AuthProvider
+│   ├── page.tsx              # Protected home page
 │   └── globals.css           # Global styles
 ├── components/               # React components
+│   ├── auth/                 # Auth components (ProtectedRoute)
+│   ├── layout/               # Layout components (Header)
+│   ├── providers/            # Context providers
+│   └── recipes/              # Recipe components (ImageUpload)
 ├── lib/                      # Utilities and helpers
 │   ├── ai/                   # OpenAI integration
-│   ├── db/                   # Database helpers
+│   ├── auth/                 # Auth helpers (client & server)
+│   ├── contexts/             # React contexts (AuthContext)
+│   ├── db/firebase/          # Firebase Firestore helpers
+│   ├── firebase/             # Firebase config & storage
 │   └── utils/                # Utility functions
 ├── types/                    # TypeScript type definitions
 ├── public/                   # Static assets
-└── supabase-schema.sql       # Database schema
+├── firebase.json             # Firebase configuration
+├── firestore.rules           # Firestore security rules
+├── firestore.indexes.json    # Firestore indexes
+├── storage.rules             # Storage security rules
+└── firestore-schema.md       # Database schema documentation
 ```
 
 ## API Endpoints
@@ -251,17 +295,18 @@ npm run lint
 
 ## Database Schema
 
-The database schema includes the following tables:
+The Firestore database includes the following collections:
 
-- **meal_plans**: Stores meal plan date ranges
-- **meals**: Individual meals within plans
-- **recipes**: Recipe details with ingredients (JSONB)
-- **pantry_items**: User's pantry inventory
-- **grocery_lists**: Generated grocery lists (JSONB)
+- **users**: User profiles
+- **mealPlans**: Stores meal plan date ranges (with meals subcollection)
+  - **meals** (subcollection): Individual meals within each plan
+- **recipes**: Recipe details with ingredients (public read access)
+- **pantryItems**: User's pantry inventory
+- **groceryLists**: Generated grocery lists with AI-powered items
 
-All tables include Row Level Security (RLS) policies for multi-user support.
+All collections include Firestore security rules for multi-user support and data protection.
 
-See `supabase-schema.sql` for the complete schema.
+See `firestore-schema.md` for the complete schema documentation.
 
 ## Future Enhancements
 
@@ -272,6 +317,37 @@ See `supabase-schema.sql` for the complete schema.
 - Nutritional information tracking
 - Multi-language support
 
+## Deployment
+
+### Deploy to Firebase Hosting
+
+```bash
+# Deploy everything (hosting, firestore rules, storage rules)
+npm run firebase:deploy
+
+# Deploy only hosting
+npm run firebase:deploy:hosting
+
+# Deploy only Firestore rules
+npm run firebase:deploy:firestore
+
+# Deploy only Storage rules
+npm run firebase:deploy:storage
+```
+
+### Run Firebase Emulators (Local Development)
+
+```bash
+npm run firebase:emulators
+```
+
+This will start local emulators for:
+- Auth (port 9099)
+- Firestore (port 8080)
+- Storage (port 9199)
+- Hosting (port 5000)
+- Emulator UI (port 4000)
+
 ## Troubleshooting
 
 ### OpenAI API Errors
@@ -280,16 +356,24 @@ See `supabase-schema.sql` for the complete schema.
 - Check your OpenAI account has sufficient credits
 - Verify the model name in `.env.local` (default: `gpt-4-turbo-preview`)
 
-### Supabase Connection Issues
+### Firebase Connection Issues
 
-- Verify your Supabase URL and anon key are correct
-- Check that RLS policies are set up correctly
-- Ensure the schema migration ran successfully
+- Verify all Firebase environment variables are correct
+- Check that Firestore security rules are deployed: `firebase deploy --only firestore`
+- Ensure Storage security rules are deployed: `firebase deploy --only storage`
+- Check Firebase console for any service issues
+
+### Authentication Issues
+
+- Verify Email/Password authentication is enabled in Firebase Console
+- Check that auth cookies are being set correctly
+- Ensure service account key is valid for server-side operations
 
 ### Build Errors
 
 - Clear `.next` folder and rebuild: `rm -rf .next && npm run build`
 - Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
+- Verify all environment variables are set in `.env.local`
 
 ## Contributing
 
@@ -314,4 +398,4 @@ For issues and questions:
 
 ---
 
-Built with Next.js, Supabase, and OpenAI GPT-4
+Built with Next.js, Firebase, and OpenAI GPT-4

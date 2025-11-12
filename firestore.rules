@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection - users can only read/write their own data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Meal plans - users can only access their own meal plans
+    match /mealPlans/{planId} {
+      allow read, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Meals subcollection - access controlled by parent meal plan ownership
+      match /meals/{mealId} {
+        allow read, write: if isAuthenticated() &&
+                           get(/databases/$(database)/documents/mealPlans/$(planId)).data.userId == request.auth.uid;
+      }
+    }
+
+    // Recipes - public read, authenticated users can write
+    match /recipes/{recipeId} {
+      allow read: if true; // Public read access
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    // Pantry items - users can only access their own pantry items
+    match /pantryItems/{itemId} {
+      allow read, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Grocery lists - access controlled by meal plan ownership
+    match /groceryLists/{listId} {
+      allow read, delete: if isAuthenticated() &&
+                          get(/databases/$(database)/documents/mealPlans/$(resource.data.mealPlanId)).data.userId == request.auth.uid;
+      allow create: if isAuthenticated() &&
+                    get(/databases/$(database)/documents/mealPlans/$(request.resource.data.mealPlanId)).data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+                    get(/databases/$(database)/documents/mealPlans/$(resource.data.mealPlanId)).data.userId == request.auth.uid;
+    }
+  }
+}

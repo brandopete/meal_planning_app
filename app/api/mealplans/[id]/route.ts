@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMealPlan, updateMealPlan, deleteMealPlan } from '@/lib/db/meal-plans';
+import { getMealPlan, updateMealPlan, deleteMealPlan } from '@/lib/db/firebase/meal-plans';
+import { requireAuth } from '@/lib/auth/server';
 import { z } from 'zod';
 
 // Validation schema for updates
@@ -13,12 +14,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
     const { id } = await params;
 
-    const { data, error } = await getMealPlan(id);
+    const { data, error } = await getMealPlan(id, user.uid);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data) {
@@ -29,7 +35,10 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error fetching meal plan:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -43,6 +52,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
     const { id } = await params;
     const body = await request.json();
 
@@ -68,10 +79,16 @@ export async function PUT(
     }
 
     // Update meal plan
-    const { data, error } = await updateMealPlan(id, updates);
+    const { data, error } = await updateMealPlan(id, user.uid, {
+      startDate: updates.start_date,
+      endDate: updates.end_date,
+    });
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data) {
@@ -82,7 +99,10 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error updating meal plan:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -96,15 +116,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require authentication
+    const user = await requireAuth();
     const { id } = await params;
 
-    const { success, error } = await deleteMealPlan(id);
+    const { data, error } = await deleteMealPlan(id, user.uid);
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!success) {
+    if (!data) {
       return NextResponse.json(
         { error: 'Meal plan not found' },
         { status: 404 }
@@ -112,7 +137,10 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error deleting meal plan:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

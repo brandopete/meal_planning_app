@@ -47,9 +47,9 @@ export async function generateGroceryList(
     end: endDate,
     meals: meals.map((meal) => ({
       date: meal.date,
-      meal_time: meal.meal_time,
+      meal_time: meal.mealTime,
       title: meal.title,
-      recipe: meal.recipe_id && recipes[meal.recipe_id] ? recipes[meal.recipe_id] : null,
+      recipe: meal.recipeId && recipes[meal.recipeId] ? recipes[meal.recipeId] : null,
       description: meal.description,
       servings: meal.servings,
     })),
@@ -137,33 +137,47 @@ Return only the JSON object.`;
       throw new Error('Invalid response format from OpenAI');
     }
 
-    // Add IDs to items and build the full grocery list
+    // Add IDs to items and transform snake_case to camelCase
     const items = validationResult.data.items.map((item) => ({
-      ...item,
       id: uuidv4(),
+      name: item.name,
+      displayName: item.display_name,
+      quantity: item.quantity,
+      unit: item.unit,
+      quantityInGrams: item.quantity_in_grams,
+      category: item.category,
+      notes: item.notes,
+      fromRecipes: item.from_recipes.map(source => ({
+        recipeId: source.recipe_id,
+        mealDate: source.meal_date,
+        servings: source.servings,
+      })),
+      estimatedPrice: item.estimated_price,
+      storeSuggestions: item.store_suggestions,
+      optional: item.optional,
     }));
 
     const totalEstimatedCost = items.reduce(
-      (sum, item) => sum + (item.estimated_price || 0),
+      (sum, item) => sum + (item.estimatedPrice || 0),
       0
     );
 
     const groceryList: GroceryList = {
       id: uuidv4(),
-      meal_plan_id: mealPlanId,
+      mealPlanId: mealPlanId,
       meta: {
-        generated_at: new Date().toISOString(),
-        date_range: {
+        generatedAt: new Date().toISOString(),
+        dateRange: {
           start: startDate,
           end: endDate,
         },
-        servings_scale: 1.0,
-        unit_system: unitSystem,
+        servingsScale: 1.0,
+        unitSystem: unitSystem,
       },
       items,
       summary: {
-        total_items: items.length,
-        estimated_total: totalEstimatedCost > 0 ? totalEstimatedCost : undefined,
+        totalItems: items.length,
+        estimatedTotal: totalEstimatedCost > 0 ? totalEstimatedCost : undefined,
       },
     };
 

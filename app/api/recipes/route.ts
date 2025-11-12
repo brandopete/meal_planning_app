@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllRecipes, createRecipe } from '@/lib/db/recipes';
+import { getAllRecipes, createRecipe } from '@/lib/db/firebase/recipes';
+import { requireAuth } from '@/lib/auth/server';
 import { z } from 'zod';
 
 // Validation schema for recipe ingredients
@@ -39,6 +40,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication for creating recipes
+    await requireAuth();
+
     const body = await request.json();
 
     // Validate request body
@@ -52,15 +56,23 @@ export async function POST(request: NextRequest) {
 
     const recipeData = validationResult.data;
 
-    // Create recipe
-    const { data, error } = await createRecipe(recipeData);
+    // Create recipe with proper ingredient structure
+    const { data, error } = await createRecipe({
+      title: recipeData.title,
+      ingredients: recipeData.ingredients,
+      instructions: recipeData.instructions || '',
+      url: recipeData.url || null,
+    });
 
     if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error creating recipe:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
